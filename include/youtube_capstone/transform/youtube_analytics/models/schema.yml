@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: dim_channel
+    description: "SCD Type 2 dimension for YouTube channels derived from channel registry pulls."
+    columns:
+      - name: channel_sk
+        description: "Surrogate key for a specific channel version."
+        tests:
+          - not_null
+          - unique
+      - name: channel_id
+        description: "YouTube channel ID (natural key)."
+        tests:
+          - not_null
+      - name: effective_from
+        description: "Timestamp when this channel version became effective."
+        tests:
+          - not_null
+      - name: is_current
+        description: "True if this is the current version for the channel."
+
+  - name: dim_video
+    description: "SCD Type 2 dimension for YouTube videos derived from video metadata pulls."
+    columns:
+      - name: video_sk
+        description: "Surrogate key for a specific video version."
+        tests:
+          - not_null
+          - unique
+      - name: video_id
+        description: "YouTube video ID (natural key)."
+        tests:
+          - not_null
+      - name: channel_id
+        description: "YouTube channel ID the video belongs to."
+        tests:
+          - not_null
+      - name: effective_from
+        description: "Timestamp when this video version became effective."
+        tests:
+          - not_null
+      - name: is_current
+        description: "True if this is the current version for the video."
+
+  - name: fact_video_daily_performance
+    description: "Daily performance snapshot at grain (video_id, date). Uses the latest snapshot per day (UTC)."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [video_id, date]
+    columns:
+      - name: date
+        description: "UTC date derived from snapshot_at."
+        tests:
+          - not_null
+      - name: video_id
+        description: "YouTube video ID (natural key)."
+        tests:
+          - not_null
+      - name: channel_id
+        description: "YouTube channel ID (natural key)."
+        tests:
+          - not_null
+      - name: video_sk
+        description: "Current video surrogate key (joins to dim_video where is_current = true)."
+      - name: channel_sk
+        description: "Current channel surrogate key (joins to dim_channel where is_current = true)."

@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw
+    database: DATAEXPERT_STUDENT
+    schema: YOUTUBE_CAPSTONE
+    tables:
+      - name: CHANNEL_REGISTRY_RAW
+      - name: VIDEO_METADATA_RAW
+      - name: VIDEO_STATS_SNAPSHOTS_RAW
