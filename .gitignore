@@ -32,3 +32,18 @@ snowpark_jobs/
 
 # Python build
 *.pyc
+
+# Old / unused DAG
+dags/youtube_dbt_dag.py
+
+# Bootcamp / template code
+include/eczachly/
+dbt_project/
+tests/
+
+# Environment helpers
+packages.txt
+
+# Public keys
+rsa_key.pub
+
