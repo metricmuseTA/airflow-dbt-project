@@ -4,15 +4,15 @@ youtube_analytics_capstone:
     dev:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      host: "{{ env_var('SNOWFLAKE_HOST') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       schema: "{{ env_var('STUDENT_SCHEMA') }}"
       threads: 4
       client_session_keep_alive: false
       query_tag: youtube_capstone_dbt
 
-      # keypair auth (container path)
-      private_key_path: /usr/local/airflow/rsa_key.p8
-      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE') }}"
+     

@@ -1,84 +1,131 @@
-from __future__ import annotations
-
 import os
 from datetime import datetime, timedelta
 
-from airflow import DAG
+from airflow.decorators import dag
 from airflow.operators.bash import BashOperator
 
-# ------------------------------------------------------------------------------
-# YouTube Capstone dbt Pipeline (Astro / Airflow)
-#
-# Runs:
-#   dbt deps -> dbt seed -> dbt run -> dbt test
-#
-# Ensures dbt uses the correct project + profiles paths inside the Astro container
-# and passes required env vars (SNOWFLAKE_*, DBT_*, STUDENT_SCHEMA).
-# ------------------------------------------------------------------------------
+# Absolute path to dbt installed in the Dockerfile venv
+DBT_BIN = "/usr/local/airflow/dbt_venv/bin/dbt"
 
-DBT_PROFILE_NAME = "youtube_analytics_capstone"
+# Where your dbt project lives inside the Astro container.
+# In your repo, dbt project is: include/youtube_capstone/transform/youtube_analytics
+DBT_PROJECT_DIR = "/usr/local/airflow/include/youtube_capstone/transform/youtube_analytics"
 
-# Inside the Astro container, the repo is mounted at /usr/local/airflow
-DBT_PROJECT_PATH = "/usr/local/airflow/include/youtube_capstone/transform/youtube_analytics"
-DBT_PROFILES_PATH = DBT_PROJECT_PATH  # profiles.yml lives in the same folder
+# Use the profiles.yml that lives inside the dbt project folder
+DBT_PROFILES_DIR = DBT_PROJECT_DIR
 
-BASE_DBT_ENV = {
-    "DBT_PROFILE_NAME": DBT_PROFILE_NAME,
-    "DBT_PROFILES_DIR": DBT_PROFILES_PATH,
-    "DBT_PROJECT_DIR": DBT_PROJECT_PATH,
-    "DBT_LOG_FORMAT": "text",
-    "DBT_PACKAGES_INSTALL_PATH": "/tmp/dbt_packages",
-    "DBT_TARGET_PATH": "/tmp/dbt_target",
-}
+# Optional: explicitly set profile/target if you want (safe to omit if profiles.yml defines defaults)
+DBT_PROFILE_NAME = os.getenv("DBT_PROFILE_NAME", "youtube_analytics_capstone")
+DBT_TARGET = os.getenv("DBT_TARGET", "dev")
 
-# Pass through Snowflake + dbt env vars AND STUDENT_SCHEMA (required by your project)
-PASSTHROUGH_ENV = {
-    k: v
-    for k, v in os.environ.items()
-    if k.startswith("SNOWFLAKE_") or k.startswith("DBT_") or k == "STUDENT_SCHEMA"
-}
-
-DBT_ENV = {**BASE_DBT_ENV, **PASSTHROUGH_ENV}
-
-default_args = {
+DEFAULT_ARGS = {
+    "owner": "airflow",
     "retries": 1,
-    "retry_delay": timedelta(minutes=5),
+    "retry_delay": timedelta(minutes=2),
 }
 
-with DAG(
+@dag(
     dag_id="youtube_capstone_dbt",
-    start_date=datetime(2026, 1, 1),
-    schedule=None,  # manual trigger for submission
+    description="Runs dbt deps/seed/run/test for YouTube capstone",
+    default_args=DEFAULT_ARGS,
+    start_date=datetime(2024, 1, 1),
+    schedule=None,   # manual runs only
     catchup=False,
-    default_args=default_args,
-    tags=["youtube", "capstone", "dbt"],
-) as dag:
+    tags=["capstone", "dbt", "youtube"],
+)
+def youtube_capstone_dbt():
+    # Helpful debug task so we can SEE what's available inside the container
+    dbt_debug_env = BashOperator(
+        task_id="dbt_debug_env",
+        bash_command=f"""
+        set -e
+        echo "AIRFLOW_HOME=$AIRFLOW_HOME"
+        echo "DBT_PROJECT_DIR={DBT_PROJECT_DIR}"
+        echo "DBT_PROFILES_DIR={DBT_PROFILES_DIR}"
+        ls -la {DBT_PROJECT_DIR} || true
+        echo "dbt binary:" && ls -la {DBT_BIN} || true
+        {DBT_BIN} --version
+        """,
+    )
+
     dbt_deps = BashOperator(
         task_id="dbt_deps",
-        cwd=DBT_PROJECT_PATH,
-        env=DBT_ENV,
-        bash_command="dbt deps",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"{DBT_BIN} deps --profiles-dir {DBT_PROFILES_DIR} "
+            f"--profile {DBT_PROFILE_NAME} --target {DBT_TARGET}"
+        ),
     )
 
     dbt_seed = BashOperator(
-        task_id="dbt_seed",
-        cwd=DBT_PROJECT_PATH,
-        env=DBT_ENV,
-        bash_command="dbt seed",
-    )
+    task_id="dbt_seed",
+    bash_command=(
+        f"cd {DBT_PROJECT_DIR} && "
+        f"{DBT_BIN} seed --profiles-dir {DBT_PROFILES_DIR} "
+        f"--profile {DBT_PROFILE_NAME} --target {DBT_TARGET} --full-refresh"
+    ),
+    env={
+    "SNOWFLAKE_ACCOUNT": "LYWBBPJ-ODB66944",
+    "SNOWFLAKE_HOST": "LYWBBPJ-ODB66944.snowflakecomputing.com",
+    "SNOWFLAKE_ROLE": "ALL_USERS_ROLE",
+    "SNOWFLAKE_USER": os.environ.get("SNOWFLAKE_USER", ""),
+    "SNOWFLAKE_PASSWORD": os.environ.get("SNOWFLAKE_PASSWORD", ""),
+    "SNOWFLAKE_DATABASE": os.environ.get("SNOWFLAKE_DATABASE", ""),
+    "SNOWFLAKE_WAREHOUSE": os.environ.get("SNOWFLAKE_WAREHOUSE", ""),
+    "SNOWFLAKE_SCHEMA": os.environ.get("SNOWFLAKE_SCHEMA", ""),
+    "STUDENT_SCHEMA": os.environ.get("STUDENT_SCHEMA", ""),
+    "DBT_PROFILES_DIR": str(DBT_PROFILES_DIR),
+    "DBT_PROJECT_DIR": str(DBT_PROJECT_DIR),
+}
+)
 
     dbt_run = BashOperator(
         task_id="dbt_run",
-        cwd=DBT_PROJECT_PATH,
-        env=DBT_ENV,
-        bash_command="dbt run",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"{DBT_BIN} run --profiles-dir {DBT_PROFILES_DIR} "
+            f"--profile {DBT_PROFILE_NAME} --target {DBT_TARGET}"
+        ),
+
+    env={
+    "SNOWFLAKE_ACCOUNT": "LYWBBPJ-ODB66944",
+    "SNOWFLAKE_HOST": "LYWBBPJ-ODB66944.snowflakecomputing.com",
+    "SNOWFLAKE_ROLE": "ALL_USERS_ROLE",
+    "SNOWFLAKE_USER": os.environ.get("SNOWFLAKE_USER", ""),
+    "SNOWFLAKE_PASSWORD": os.environ.get("SNOWFLAKE_PASSWORD", ""),
+    "SNOWFLAKE_DATABASE": os.environ.get("SNOWFLAKE_DATABASE", ""),
+    "SNOWFLAKE_WAREHOUSE": os.environ.get("SNOWFLAKE_WAREHOUSE", ""),
+    "SNOWFLAKE_SCHEMA": os.environ.get("SNOWFLAKE_SCHEMA", ""),
+    "STUDENT_SCHEMA": os.environ.get("STUDENT_SCHEMA", ""),
+    "DBT_PROFILES_DIR": str(DBT_PROFILES_DIR),
+    "DBT_PROJECT_DIR": str(DBT_PROJECT_DIR),
+}
     )
 
     dbt_test = BashOperator(
         task_id="dbt_test",
-        cwd=DBT_PROJECT_PATH,
-        env=DBT_ENV,
-        bash_command="dbt test",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"{DBT_BIN} test --profiles-dir {DBT_PROFILES_DIR} "
+            f"--profile {DBT_PROFILE_NAME} --target {DBT_TARGET}"
+        ),
+    
+    env={
+    "SNOWFLAKE_ACCOUNT": "LYWBBPJ-ODB66944",
+    "SNOWFLAKE_HOST": "LYWBBPJ-ODB66944.snowflakecomputing.com",
+    "SNOWFLAKE_ROLE": "ALL_USERS_ROLE",
+    "SNOWFLAKE_USER": os.environ.get("SNOWFLAKE_USER", ""),
+    "SNOWFLAKE_PASSWORD": os.environ.get("SNOWFLAKE_PASSWORD", ""),
+    "SNOWFLAKE_DATABASE": os.environ.get("SNOWFLAKE_DATABASE", ""),
+    "SNOWFLAKE_WAREHOUSE": os.environ.get("SNOWFLAKE_WAREHOUSE", ""),
+    "SNOWFLAKE_SCHEMA": os.environ.get("SNOWFLAKE_SCHEMA", ""),
+    "STUDENT_SCHEMA": os.environ.get("STUDENT_SCHEMA", ""),
+    "DBT_PROFILES_DIR": str(DBT_PROFILES_DIR),
+    "DBT_PROJECT_DIR": str(DBT_PROJECT_DIR),
+}
     )
 
-    dbt_deps >> dbt_seed >> dbt_run >> dbt_test
+    dbt_debug_env >> dbt_deps >> dbt_seed >> dbt_run >> dbt_test
+
+
+youtube_capstone_dbt()
