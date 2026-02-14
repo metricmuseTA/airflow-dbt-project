@@ -1,56 +1,7 @@
-
-
-.git
-.DS_Store
-*venv
-
-## airflow files
-airflow_settings.yaml
-__pycache__/
-astro
-airflow-webserver.pid
-webserver_config.py
-airflow.cfg
-airflow.db
-dbt_project/.env
-dbt_project/venv
-homework/dbt_project/.env
-homework/dbt_project/venv
-venv
-.vscode
-.idea/
-.vscode
-
-## dbt project files
-dbt_project/logs/
-dbt_project/.user.yml
-dbt_project/target/
-dbt_project/dbt_packages/
-dbt_project/*venv/
-dbt_project/dbt.env
-package-lock.yml
-
-## project specific files
-include/test.txt
-
-# secrets / keys
-.env
-**/.env
-*.p8
-*.pem
-*.key
-snowflake_keys/
-
-# dbt artifacts
-**/dbt_packages/
-**/target/
-**/logs/
-
-# astro / airflow local
-.astro/
-
-# misc local zips + old folders
-*.zip
-dbt_project_old/
-homework4/
-dags_disabled/
+﻿# Ignore local/extra files not needed for capstone submission
+dags/youtube_dbt_dag.py
+dbt_project/
+include/eczachly/
+packages.txt
+rsa_key.pub
+tests/
