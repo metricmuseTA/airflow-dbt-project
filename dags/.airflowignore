@@ -1,0 +1,9 @@
+﻿eczachly/
+pyspark/
+zachwilson/
+checks/
+dbt/dbt_dag_bash.py
+dbt/dbt_dag_bash_exploded.py
+dbt/dbt_dag_cosmos_DbtDag.py
+dbt/dbt_dag_cosmos_DbtTaskGroup.py
+dbt/dbt_dag_cosmos_DbtTaskGroup_whole_project.py

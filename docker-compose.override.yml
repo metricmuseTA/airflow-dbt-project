@@ -1,0 +1,18 @@
+﻿services:
+  scheduler:
+    environment:
+      SNOWFLAKE_ACCOUNT: "LYWBBPJ-ODB66944"
+      SNOWFLAKE_HOST: "LYWBBPJ-ODB66944.snowflakecomputing.com"
+      SNOWFLAKE_ROLE: "ALL_USERS_ROLE"
+
+  webserver:
+    environment:
+      SNOWFLAKE_ACCOUNT: "LYWBBPJ-ODB66944"
+      SNOWFLAKE_HOST: "LYWBBPJ-ODB66944.snowflakecomputing.com"
+      SNOWFLAKE_ROLE: "ALL_USERS_ROLE"
+
+  triggerer:
+    environment:
+      SNOWFLAKE_ACCOUNT: "LYWBBPJ-ODB66944"
+      SNOWFLAKE_HOST: "LYWBBPJ-ODB66944.snowflakecomputing.com"
+      SNOWFLAKE_ROLE: "ALL_USERS_ROLE"
