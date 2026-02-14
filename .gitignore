@@ -1,7 +1,34 @@
-﻿# Ignore local/extra files not needed for capstone submission
-dags/youtube_dbt_dag.py
-dbt_project/
-include/eczachly/
-packages.txt
-rsa_key.pub
-tests/
+﻿# Secrets
+.env
+rsa_key.p8
+snowflake_keys/
+
+# Astro / Docker
+.astro/
+logs/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+
+# dbt artifacts
+include/youtube_capstone/transform/youtube_analytics/dbt_packages/
+include/youtube_capstone/transform/youtube_analytics/target/
+include/youtube_capstone/transform/youtube_analytics/logs/
+include/youtube_capstone/transform/youtube_analytics/package-lock.yml
+
+# Airflow clutter
+dags/__pycache__/
+dags/_disabled_dbt/
+dags/dags/
+dags/dbt/__pycache__/
+dags_disabled/
+
+# Old / extra projects
+dbt_project_old/
+homework4/
+homework4.zip
+snowpark_jobs/
+
+# Python build
+*.pyc
